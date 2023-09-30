@@ -4,6 +4,13 @@ from threading import Thread
 malW_server = "192.168.4.1"
 crt_pkt = None
 
+
+def on_open(ws):
+    print(f" Connection Started ".center(62, "-"))
+
+    # Start input daemon
+    Thread(target=input_thread, args=[ws], daemon=True).start()
+
 def on_message(ws, pkt:str):
     global crt_pkt
     print(pkt)
@@ -19,11 +26,10 @@ def on_close(ws, code, msg):
     print(f" Connection Closed ".center(62, "-"))
     exit(0)
 
-def on_open(ws):
-    print(f" Connection Started ".center(62, "-"))
-    Thread(target=input_thread, args=[ws], daemon=True).start()
 
 
+
+# Take input from user
 def input_thread(ws):
     global crt_pkt
     while True:
@@ -33,18 +39,22 @@ def input_thread(ws):
 
         try:
             # Get input
-            pkt = input("\n> ")
+            pkt = input("> ")
         except EOFError:
+            ws.close()
             exit(0)
-        else: send_pkt(pkt)
+        
+        # Exit case
+        if pkt == "exit":
+            ws.close()
+            exit(0)
+
+        # Send packet
+        crt_pkt = pkt
+        send_pkt(pkt)
             
 
 def send_pkt(pkt):
-    if pkt == "exit":
-        ws.close()
-        exit(0)
-
-    crt_pkt = pkt
     ws.send(pkt)
 
 
