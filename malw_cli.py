@@ -1,6 +1,7 @@
 import websocket, time, argparse
 from threading import Thread, Lock
 
+from commands import Commands
 
 SERVER_IP = "192.168.4.1"
 
@@ -9,33 +10,35 @@ def main(args):
     malw = WebSocketClient(SERVER_IP, args.debug)
     malw.connect()
 
-    # Await connection to be established
+    # Await connection to be established and initialise
     if not wait_for(malw.is_connected, True, delay=0.25, timeout=5):
         malw.disconnect()
         raise websocket.WebSocketTimeoutException("Failed to establish connection")
-        
+    else: malw.execute("close")
+
     print(" Connection Established ".center(100, "="))
     print("Firmware " + malw.execute("version"))
+    print(malw.execute("mem"))
+    print(malw.execute("ls"))
 
-
+    # Load available commands
+    cmds = [method for method in dir(Commands) if not method.startswith("__")]
+    
     while True:
         try:
             # Get input
-            cmd = input("\n> ")
+            cmd = input("\n> ").split(" ", maxsplit=1)
         except (EOFError, KeyboardInterrupt):
             malw.disconnect()
             break
         
-        # Exit case
-        if cmd == "exit":
-            malw.disconnect()
-            break
-        
+        # Check if the command has custom handling
+        if cmd[0] in cmds:
+            getattr(Commands, cmd[0])(malw, cmd)
+ 
         # Send and listen
         resp = malw.execute(cmd)
         print(resp)
-    
-    # Exit
     
 
 
@@ -54,6 +57,7 @@ class WebSocketClient:
         self.server = server
         self.debug = debug
         self.connected = False
+        self.running = None
 
         self.__ws = None
         self.__lock = Lock()
