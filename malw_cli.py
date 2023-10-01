@@ -9,7 +9,8 @@ def main(args):
     ws = WebSocketClient("192.168.4.1", args.trace)
     ws.connect()
 
-    print(wait_for(ws.is_connected, True, 0.25))
+    print(wait_for(ws.is_connected, True, delay=0.25, timeout=5))
+    print(execute_cmd(ws, "version"))
 
     # while True:
     #     if crt_pkt != None:
@@ -99,10 +100,21 @@ class WebSocketClient:
 
 
 
-def wait_for(func, value, delay):
+def wait_for(func, expected, delay, timeout):
     rtn = None
-    while (rtn := func()) != value:
+    while (rtn := func()) != expected:
         time.sleep(delay)
+        if timeout != None and (timeout := timeout - delay) < 0:
+            return None
+    return rtn
+
+def execute_cmd(ws, cmd, timeout=3, delay=0.1):
+    ws.send(cmd)
+    rtn = None
+    while type(rtn := ws.receive()) is not str:
+        time.sleep(delay)
+        if (timeout := timeout - delay) < 0:
+            return None
     return rtn
     
 
