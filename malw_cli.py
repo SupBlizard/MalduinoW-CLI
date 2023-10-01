@@ -27,14 +27,14 @@ def main(args):
     while True:
         try:
             # Get input
-            cmd = input("\n> ").split(" ", maxsplit=1)
+            cmd = input("\n> ")
         except (EOFError, KeyboardInterrupt):
             malw.disconnect()
             break
         
         # Check if the command has custom handling
-        if cmd[0] in cmds:
-            getattr(Commands, cmd[0])(malw, cmd)
+        if (cmd_name := cmd.split(" ", maxsplit=1)[0]) in cmds:
+            getattr(Commands, cmd_name)(malw, cmd)
  
         # Send and listen
         resp = malw.execute(cmd)
@@ -61,7 +61,7 @@ class WebSocketClient:
 
         self.__ws = None
         self.__lock = Lock()
-        self.__pkt_buffer = None
+        self.__pkt_buffer = []
         
     def connect(self):
         if self.connected == True:
@@ -88,11 +88,11 @@ class WebSocketClient:
         self.__ws.send(pkt)
     
     def listen(self) -> str:
-        if not self.__pkt_buffer:
+        if len(self.__pkt_buffer) == 0:
             return None
         with self.__lock:
-            pkt = self.__pkt_buffer
-            self.__pkt_buffer = None
+            pkt = self.__pkt_buffer[0]
+            self.__pkt_buffer = []
         return pkt
     
     def execute(self, cmd:str, delay=0.1, timeout=5) -> str:
@@ -107,7 +107,7 @@ class WebSocketClient:
     # WS methods
     def __on_message(self, ws, pkt:str):
         with self.__lock:
-            self.__pkt_buffer = pkt
+            self.__pkt_buffer.append(pkt)
 
     def __on_error(self, ws, err):
         try:
@@ -136,5 +136,5 @@ if __name__ == "__main__":
 
     try:   main(args)
     except websocket.WebSocketException as e:
-        if args.debug == False: print(e, end="\n\n")
+        if args.debug == True: print(e, end="\n\n")
         else: raise e
