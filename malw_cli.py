@@ -21,24 +21,24 @@ def main(args):
     print(malw.execute("mem"))
     print(malw.execute("ls"))
 
-    # Load available commands
+    # Load available command methods
     cmds = [method for method in dir(Commands) if not method.startswith("__")]
     
     while True:
-        try:
-            # Get input
-            cmd = input("\n> ")
+        try: cmd = input("\n> ")
         except (EOFError, KeyboardInterrupt):
-            malw.disconnect()
-            break
+            Commands.exit(malw, [])
         
         # Check if the command has custom handling
         if (cmd_name := cmd.split(" ", maxsplit=1)[0]) in cmds:
-            getattr(Commands, cmd_name)(malw, cmd)
- 
-        # Send and listen
-        resp = malw.execute(cmd)
-        print(resp)
+            rtn = getattr(Commands, cmd_name)(malw, cmd)
+        else: rtn = malw.execute(cmd)
+
+        # Print if the return value is not None
+        if rtn: print(rtn)
+
+        # Clear packet buffer queue
+        malw.pkt_buffer = []
     
 
 
@@ -58,10 +58,11 @@ class WebSocketClient:
         self.debug = debug
         self.connected = False
         self.running = None
+        self.pkt_buffer = []
 
         self.__ws = None
         self.__lock = Lock()
-        self.__pkt_buffer = []
+        
         
     def connect(self):
         if self.connected == True:
@@ -88,17 +89,17 @@ class WebSocketClient:
         self.__ws.send(pkt)
     
     def listen(self) -> str:
-        if len(self.__pkt_buffer) == 0:
+        if len(self.pkt_buffer) == 0:
             return None
         with self.__lock:
-            pkt = self.__pkt_buffer[0]
-            self.__pkt_buffer = []
+            pkt = self.pkt_buffer[0]
+            self.pkt_buffer.pop(0)
         return pkt
     
     def execute(self, cmd:str, delay=0.1, timeout=5) -> str:
         self.send(cmd+"\n")
         while time.sleep(delay) == None: # (identical to "while True" but calls sleep)
-            if type(resp := self.listen()) is str:
+            if (resp := self.listen()):
                 return resp
             elif (timeout := timeout - delay) < 0:
                 raise websocket.WebSocketTimeoutException("Command timed out")
@@ -107,7 +108,7 @@ class WebSocketClient:
     # WS methods
     def __on_message(self, ws, pkt:str):
         with self.__lock:
-            self.__pkt_buffer.append(pkt)
+            self.pkt_buffer.append(pkt)
 
     def __on_error(self, ws, err):
         try:
@@ -136,5 +137,5 @@ if __name__ == "__main__":
 
     try:   main(args)
     except websocket.WebSocketException as e:
-        if args.debug == True: print(e, end="\n\n")
+        if args.debug != True: print(e, end="\n\n")
         else: raise e
