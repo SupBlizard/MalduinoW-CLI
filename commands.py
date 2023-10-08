@@ -23,24 +23,40 @@ MAX_FILENAME_LEN = 30
 
 
 class Commands:
-    def run(malw, args:list):
+    def run(malw, args:str):
         if malw.running:
-            malw.execute("stop "+args[1])
+            malw.execute("stop "+args)
         malw.running = args
-        return malw.execute("run "+args[1])
+        return malw.execute("run "+args)
     
-    def ls(malw, args:list):
+    def ls(malw, args:str):
         files = process_file_list(malw.execute("ls"))
         print(f"{len(files['list'])} Script(s) saved, {files['size']} bytes in total.")
         for file in files["list"]: print(f"/{file[0].ljust(MAX_FILENAME_LEN)} | {file[1].ljust(7)} byte(s)")
     
 
+    def cat(malw, args:str):
+        timeout, delay = 500, 50
+        filename = '"/'+args+'"'
+
+        malw.execute("close")
+        malw.execute("stop " + filename)
+        malw.execute("stream " + filename)
+        
+        print((" "+args+" ").center(100, "-"))
+        file_content = ""
+        while True:
+            if (pkt := malw.execute("read")) == "> END": break
+            else: file_content += pkt
+        print(file_content+"\n"+"-"*100)
+
+        malw.execute("close")
 
 
     # =========================================
     #             Custom commands
     # =========================================
-    def exit(malw, args:list):
+    def exit(malw, args:str):
         malw.disconnect()
         exit(0)
 
