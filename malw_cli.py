@@ -25,14 +25,15 @@ def main(args):
     cmds = [method for method in dir(Commands) if not method.startswith("__")]
     
     while True:
-        try: cmd = input("\n> ")
+        try:
+            cmd = input("\n> ").split(" ", maxsplit=1)
+            if len(cmd) == 1: cmd.append([])
         except (EOFError, KeyboardInterrupt):
             Commands.exit(malw, [])
-        
+
         # Check if the command has custom handling
-        if (cmd_name := cmd.split(" ", maxsplit=1)[0]) in cmds:
-            rtn = getattr(Commands, cmd_name)(malw, cmd)
-        else: rtn = malw.execute(cmd)
+        if cmd[0] not in cmds: rtn = malw.execute(cmd)
+        else: rtn = getattr(Commands, cmd[0])(malw, cmd[1])
 
         # Print if the return value is not None
         if rtn: print(rtn)
