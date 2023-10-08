@@ -7,37 +7,32 @@ SERVER_IP = "192.168.4.1"
 
 
 def main(args):
-    # Load available custom command methods
-    custom_cmds = [method for method in dir(Cmds) if not method.startswith("__")]
-
     # Connect to the Malduino W's websocket
     malw = MalduinoW(SERVER_IP, args.debug)
     malw.connect()
 
     # Await for the connection to be established
     if not wait_for(malw.is_connected, True, delay=0.25, timeout=5):
-        Cmds.exit(malw)
+        malw.cmds.exit()
         raise websocket.WebSocketTimeoutException("Failed to establish connection")
     else: malw.execute("close")
 
     print(" Connection Established ".center(100, "="))
     print("Firmware " + malw.execute("version"))
     print(malw.execute("mem"))
-    print(Cmds.ls(malw, ""))
+    print(malw.cmds.ls())
 
 
-    
     while True:
         try:
             cmd = input("\n> ").split(" ", maxsplit=1)
             if len(cmd) == 1: cmd.append([])
         except (EOFError, KeyboardInterrupt):
-            Cmds.exit(malw)
+            malw.cmds.exit()
 
-        # Check if the command has custom handling
-        if cmd[0] not in custom_cmds: rtn = malw.execute(cmd)
-        elif (rtn := getattr(Cmds, cmd[0])(malw, cmd[1])):
-            print(rtn) # Print if the return value is not None
+        # Check if the command has custom handling and print any returns
+        if cmd[0] not in malw.cmds.available: rtn = malw.execute(cmd)
+        elif (rtn := getattr(malw.cmds, cmd[0])(cmd[1])):  print(rtn)
 
         # Clear packet buffer queue
         malw.pkt_buffer = []
@@ -60,8 +55,10 @@ class MalduinoW:
         self.debug = debug
         self.connected = False
         self.running = None
+
         self.pkt_buffer = []
         self.thread = None
+        self.cmds = Cmds(self)
 
         self.__ws = None
         self.__lock = Lock()

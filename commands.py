@@ -23,50 +23,59 @@ MAX_FILENAME_LEN = 30
 
 
 class Cmds:
-    def run(malw, args:str):
-        if malw.running:
-            malw.execute("stop "+args)
-        malw.running = args
-        return malw.execute("run "+args)
+    def __init__(self, malw):
+        self.malw = malw
+
+        # Store a list of custom methods
+        self.available = [method for method in dir(self) if not method.startswith("__")]
+
+    def run(self, args=""):
+        if self.malw.running:
+            self.malw.execute("stop "+args)
+        self.malw.running = args
+        self.malw.execute("run "+args)
+        return f"Running {args}"
     
-    def ls(malw, args:str):
-        files = process_file_list(malw.execute("ls"))
-        print(f"{len(files['list'])} Script(s) saved, {files['size']} bytes in total.")
-        for file in files["list"]: print(f"/{file[0].ljust(MAX_FILENAME_LEN)} | {file[1].ljust(7)} byte(s)")
+    def ls(self, args=""):
+        files = parse_file_list(self.malw.execute("ls"))
+        file_list = f"{len(files['list'])} Script(s) saved, {files['size']} bytes in total.\n"
+        for file in files["list"]: file_list+=f"/{file[0].ljust(MAX_FILENAME_LEN)} | {file[1].ljust(7)} byte(s)\n"
+        return file_list
     
 
-    def cat(malw, args:str):
+    def cat(self, args=""):
         timeout, delay = 500, 50
-        filename = '"/'+args+'"'
-
-        malw.execute("close")
-        malw.execute("stop " + filename)
-        malw.execute("stream " + filename)
-        
-        print((" "+args+" ").center(100, "-"))
         file_content = ""
+
+        if not args.strip(): return "Missing filename."
+            
+        filename = '"/'+args+'"'
+        self.malw.execute("close")
+        self.malw.execute("stop " + filename)
+        self.malw.execute("stream " + filename)
+        
         while True:
-            if (pkt := malw.execute("read")) == "> END": break
-            else: file_content += pkt
-        print(file_content+"\n"+"-"*100)
+            if (pkt := self.malw.execute("read")) != "> END":
+                file_content += pkt
+            else: break
 
-        malw.execute("close")
+        self.malw.execute("close")
+        return (" "+args+" ").center(100, "-")+"\n"+file_content+"\n"+"-"*100
 
-
+        
     # =========================================
-    #             Custom commands
+    #             Utillity commands
     # =========================================
-    def exit(malw, args:str=""):
-        malw.disconnect()
-        malw.thread.join()
+    def exit(self, args=""):
+        self.malw.disconnect()
+        self.malw.thread.join()
         exit(0)
 
 
 
 
 
-
-def process_file_list(fl:str):
+def parse_file_list(fl:str):
     file_list, size = [], 0
     for file in fl.strip().split("\n"):
         sep_idx = file.rindex(" ")
