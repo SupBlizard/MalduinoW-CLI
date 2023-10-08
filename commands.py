@@ -1,20 +1,20 @@
 
 
 
-managed = {
-    "cat",
-    "ram",
-    "run",
-    "settings",
-    "status",
-    "mem",
-    "format",
-    "ls",
-    "help",
-}
+# misc = {
+#     "run",
+#     "status",
+#     "mem",
+#     "format",
+#     "help",
+#     "stop",
+#     "version"
+# }
 
-unmanaged = ["create", "remove", "rename", "write", "stream", "close", "read", "stop", "set", "reset", "version"]
+# files = ["create", "remove", "rename", "write", "stream", "close", "read", "ls"]
 
+# settings:
+# settings, set, reset
 
 
 MAX_FILENAME_LEN = 30
@@ -28,11 +28,11 @@ class Cmds:
 
         # Store a list of custom methods
         self.available = [method for method in dir(self) if not method.startswith("__")]
+    
+
 
     def run(self, args=""):
-        if self.malw.running:
-            self.malw.execute("stop "+args)
-        self.malw.running = args
+        self.malw.execute("stop")
         self.malw.execute("run "+args)
         return f"Running {args}"
     
@@ -54,12 +54,12 @@ class Cmds:
         self.malw.execute("stop " + filename)
         self.malw.execute("stream " + filename)
         
+        # Read stream
         while True:
-            if (pkt := self.malw.execute("read")) != "> END":
-                file_content += pkt
-            else: break
-
+            if (pkt := self.malw.execute("read")) == "> END": break
+            file_content += pkt
         self.malw.execute("close")
+        
         return (" "+args+" ").center(100, "-")+"\n"+file_content+"\n"+"-"*100
 
         
