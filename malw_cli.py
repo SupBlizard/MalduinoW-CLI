@@ -26,13 +26,17 @@ def main(args):
     while True:
         try:
             cmd = input("\n> ").split(" ", maxsplit=1)
-            if len(cmd) == 1: cmd.append([])
+            if len(cmd) == 1: cmd.append("")
         except (EOFError, KeyboardInterrupt):
             malw.cmds.exit()
 
-        # Check if the command has custom handling and print any returns
-        if cmd[0] not in malw.cmds.available: rtn = malw.execute(cmd)
-        elif (rtn := getattr(malw.cmds, cmd[0])(cmd[1])):  print(rtn)
+        # Check if the command has custom handling
+        if cmd[0] in malw.cmds.available:
+            rtn = getattr(malw.cmds, cmd[0])(cmd[1])
+        else: rtn = malw.execute(" ".join(cmd))
+        
+        # Print return value if there is any
+        if rtn: print(rtn)
 
         # Clear packet buffer queue
         malw.pkt_buffer = []
