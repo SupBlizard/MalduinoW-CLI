@@ -12,7 +12,7 @@ def main(args):
 
     # Await connection to be established and initialise
     if not wait_for(malw.is_connected, True, delay=0.25, timeout=5):
-        malw.disconnect()
+        Commands.exit(malw)
         raise websocket.WebSocketTimeoutException("Failed to establish connection")
     else: malw.execute("close")
 
@@ -29,7 +29,7 @@ def main(args):
             cmd = input("\n> ").split(" ", maxsplit=1)
             if len(cmd) == 1: cmd.append([])
         except (EOFError, KeyboardInterrupt):
-            Commands.exit(malw, [])
+            Commands.exit(malw)
 
         # Check if the command has custom handling
         if cmd[0] not in cmds: rtn = malw.execute(cmd)
@@ -60,6 +60,7 @@ class WebSocketClient:
         self.connected = False
         self.running = None
         self.pkt_buffer = []
+        self.thread = None
 
         self.__ws = None
         self.__lock = Lock()
@@ -140,3 +141,5 @@ if __name__ == "__main__":
     except websocket.WebSocketException as e:
         if args.debug != True: print(e, end="\n\n")
         else: raise e
+    except KeyboardInterrupt:
+        pass

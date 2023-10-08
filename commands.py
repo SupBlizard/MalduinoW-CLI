@@ -56,8 +56,9 @@ class Commands:
     # =========================================
     #             Custom commands
     # =========================================
-    def exit(malw, args:str):
+    def exit(malw, args:str=""):
         malw.disconnect()
+        malw.thread.join()
         exit(0)
 
 
