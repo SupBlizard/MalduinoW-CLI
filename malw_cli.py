@@ -1,42 +1,43 @@
 import websocket, time, argparse
 from threading import Thread, Lock
 
-from commands import Commands
+from commands import Cmds
 
 SERVER_IP = "192.168.4.1"
 
 
 def main(args):
-    malw = WebSocketClient(SERVER_IP, args.debug)
+    # Load available custom command methods
+    custom_cmds = [method for method in dir(Cmds) if not method.startswith("__")]
+
+    # Connect to the Malduino W's websocket
+    malw = MalduinoW(SERVER_IP, args.debug)
     malw.connect()
 
-    # Await connection to be established and initialise
+    # Await for the connection to be established
     if not wait_for(malw.is_connected, True, delay=0.25, timeout=5):
-        Commands.exit(malw)
+        Cmds.exit(malw)
         raise websocket.WebSocketTimeoutException("Failed to establish connection")
     else: malw.execute("close")
 
     print(" Connection Established ".center(100, "="))
     print("Firmware " + malw.execute("version"))
     print(malw.execute("mem"))
-    print(malw.execute("ls"))
+    print(Cmds.ls(malw, ""))
 
-    # Load available command methods
-    cmds = [method for method in dir(Commands) if not method.startswith("__")]
+
     
     while True:
         try:
             cmd = input("\n> ").split(" ", maxsplit=1)
             if len(cmd) == 1: cmd.append([])
         except (EOFError, KeyboardInterrupt):
-            Commands.exit(malw)
+            Cmds.exit(malw)
 
         # Check if the command has custom handling
-        if cmd[0] not in cmds: rtn = malw.execute(cmd)
-        else: rtn = getattr(Commands, cmd[0])(malw, cmd[1])
-
-        # Print if the return value is not None
-        if rtn: print(rtn)
+        if cmd[0] not in custom_cmds: rtn = malw.execute(cmd)
+        elif (rtn := getattr(Cmds, cmd[0])(malw, cmd[1])):
+            print(rtn) # Print if the return value is not None
 
         # Clear packet buffer queue
         malw.pkt_buffer = []
@@ -53,7 +54,7 @@ def wait_for(func, expected, delay, timeout):
     return rtn
 
 
-class WebSocketClient:
+class MalduinoW:
     def __init__(self, server:str, debug:bool):
         self.server = server
         self.debug = debug

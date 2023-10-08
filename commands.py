@@ -22,7 +22,7 @@ MAX_FILENAME_LEN = 30
 
 
 
-class Commands:
+class Cmds:
     def run(malw, args:str):
         if malw.running:
             malw.execute("stop "+args)
