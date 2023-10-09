@@ -17,9 +17,8 @@ def main(args):
         raise websocket.WebSocketTimeoutException("Failed to establish connection")
     else: malw.execute("close")
 
-    print(" Connection Established ".center(malw.cmds.MAX_WIDTH, "="))
-    print("Firmware " + malw.execute("version"))
-    print(malw.execute("mem"))
+    print((" Malduino W Firmware "+malw.execute("version")+" ").center(malw.cmds.MAX_WIDTH, "="))
+    print(malw.cmds.mem()+"\n")
     print(malw.cmds.ls())
 
 

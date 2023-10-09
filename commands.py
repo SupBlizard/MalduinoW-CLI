@@ -25,7 +25,7 @@ MAX_FILENAME_LEN = 30
 class Cmds:
     def __init__(self, malw):
         self.malw = malw
-        self.MAX_WIDTH = 110
+        self.MAX_WIDTH = 105
 
         # Store a list of custom methods
         self.available = [method for method in dir(self) if not method.startswith("__")]
@@ -35,8 +35,9 @@ class Cmds:
         mem_str = self.malw.execute("mem").splitlines()
         total, used, free = int(mem_str[0].split(" ", 1)[0]), int(mem_str[1].split(" ", 1)[0]), int(mem_str[2].split(" ", 1)[0])
         percentage = math.ceil(used/(total/100))
+
         bar = f"[{('|'*math.ceil(percentage/(100/BAR_WIDTH))).ljust(BAR_WIDTH, '-')}] ({percentage}%)"
-        print(f"<{used} bytes used>  ".rjust(25)+bar+f"  <{free} bytes free>")
+        return f"<{used} bytes used>  ".ljust(24)+bar+f"  <{free} bytes free>".rjust(self.MAX_WIDTH-len(bar)-24)
         
 
     def run(self, args=""):
@@ -47,7 +48,7 @@ class Cmds:
     def ls(self, args=""):
         files = parse_file_list(self.malw.execute("ls"))
         file_list = f"{len(files['list'])} Script(s) saved, {files['size']} bytes in total.\n"
-        for file in files["list"]: file_list+=f"/{file[0].ljust(MAX_FILENAME_LEN)} | {file[1].ljust(7)} byte(s)\n"
+        for file in files["list"]: file_list+=f"/{file[0].ljust(self.MAX_WIDTH-19)} | {file[1].ljust(7)} byte(s)\n"
         return file_list
     
 
