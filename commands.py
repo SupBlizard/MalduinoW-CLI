@@ -1,4 +1,4 @@
-
+import math
 
 
 # misc = {
@@ -25,11 +25,19 @@ MAX_FILENAME_LEN = 30
 class Cmds:
     def __init__(self, malw):
         self.malw = malw
+        self.MAX_WIDTH = 110
 
         # Store a list of custom methods
         self.available = [method for method in dir(self) if not method.startswith("__")]
     
-
+    def mem(self, args=""):
+        BAR_WIDTH = 50
+        mem_str = self.malw.execute("mem").splitlines()
+        total, used, free = int(mem_str[0].split(" ", 1)[0]), int(mem_str[1].split(" ", 1)[0]), int(mem_str[2].split(" ", 1)[0])
+        percentage = math.ceil(used/(total/100))
+        bar = f"[{('|'*math.ceil(percentage/(100/BAR_WIDTH))).ljust(BAR_WIDTH, '-')}] ({percentage}%)"
+        print(f"<{used} bytes used>  ".rjust(25)+bar+f"  <{free} bytes free>")
+        
 
     def run(self, args=""):
         self.malw.execute("stop")
@@ -60,7 +68,7 @@ class Cmds:
             file_content += pkt
         self.malw.execute("close")
         
-        return (" "+args+" ").center(100, "-")+"\n"+file_content+"\n"+"-"*100
+        return (" "+args+" ").center(self.MAX_WIDTH, "-")+"\n"+file_content+"\n"+"-"*self.MAX_WIDTH
 
         
     # =========================================
