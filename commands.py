@@ -55,24 +55,26 @@ class Cmds:
         return file_list
     
 
-    def cat(self, args=""):
-        timeout, delay = 500, 50
-        file_content = ""
-
-        if not args.strip(): return "Missing filename."
-            
-        filename = '"/'+args+'"'
+    def cat(self, filename=""):
+        if not filename.strip():
+            return "Missing filename."
+        
+        # Open file stream
         self.malw.execute("close")
         self.malw.execute("stop " + filename)
         self.malw.execute("stream " + filename)
         
         # Read stream
+        content = ""
         while True:
             if (pkt := self.malw.execute("read")) == "> END": break
-            file_content += pkt
+            content += pkt
         self.malw.execute("close")
-        
-        return (" "+args+" ").center(self.MAX_WIDTH, "-")+"\n"+file_content+"\n"+"-"*self.MAX_WIDTH
+
+        if not content:
+            self.malw.execute("remove " + filename)
+            return f'File {filename} not found'
+        return (" "+args+" ").center(self.MAX_WIDTH, "-")+"\n"+content+"\n"+"-"*self.MAX_WIDTH
     
 
     def help(self, args=""):
