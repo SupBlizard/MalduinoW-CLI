@@ -95,7 +95,7 @@ class Cmds:
 
 def parse_file_list(fl:str):
     file_list, size = [], 0
-    for file in fl.strip().split("\n"):
+    for file in fl.strip().splitlines():
         sep_idx = file.rindex(" ")
         file_list.append([file[1:sep_idx], file[sep_idx+1:]])
         size += int(file[sep_idx+1:])
