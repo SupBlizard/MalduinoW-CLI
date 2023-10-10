@@ -1,17 +1,7 @@
 import math
 
 
-# misc = {
-#     "run",
-#     "status",
-#     "mem",
-#     "format",
-#     "help",
-#     "stop",
-#     "version"
-# }
-
-# files = ["create", "remove", "rename", "write", "stream", "close", "read", "ls"]
+# files = ["create", "remove", "rename", "write", "stream", "close", "read"]
 
 # settings:
 # settings, set, reset
@@ -38,13 +28,26 @@ class Cmds:
 
         bar = f"[{('|'*math.ceil(percentage/(100/BAR_WIDTH))).ljust(BAR_WIDTH, '-')}] ({percentage}%)"
         return f"<{used} bytes used>  ".ljust(24)+bar+f"  <{free} bytes free>".rjust(self.MAX_WIDTH-len(bar)-24)
-        
+    
+
+    def format(self, args=""):
+        print("This action will begin formatting SPIFFS and disconnect the Malduino W")
+        confirm = input("Are you sure you want to proceed ? [y/n]: ").lower()
+        if confirm in ["yes", "y"]:
+            self.malw.send("format")
+            print("\nFormatting SPIFFS ...")
+            self.exit()
+        elif confirm in ["no", "n"]:
+            return "Aborted"
+        else: return "Invalid option, aborting"
+
 
     def run(self, args=""):
         self.malw.execute("stop")
         self.malw.execute("run "+args)
         return f"Running {args}"
     
+
     def ls(self, args=""):
         files = parse_file_list(self.malw.execute("ls"))
         file_list = f"{len(files['list'])} Script(s) saved, {files['size']} bytes in total.\n"
@@ -70,6 +73,12 @@ class Cmds:
         self.malw.execute("close")
         
         return (" "+args+" ").center(self.MAX_WIDTH, "-")+"\n"+file_content+"\n"+"-"*self.MAX_WIDTH
+    
+
+    def help(self, args=""):
+        # TODO: Print additional utillity commands
+        return self.malw.execute("help")
+
 
         
     # =========================================
