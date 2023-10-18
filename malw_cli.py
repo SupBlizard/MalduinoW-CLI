@@ -7,8 +7,10 @@ SERVER_IP = "192.168.4.1"
 
 
 def main(args):
+    if args.debug:
+        websocket.enableTrace(True)
     # Connect to the Malduino W's websocket
-    malw = MalduinoW(SERVER_IP, args.debug)
+    malw = MalduinoW(SERVER_IP)
     malw.connect()
 
     # Await for the connection to be established
@@ -53,7 +55,7 @@ def wait_for(func, expected, delay, timeout):
 
 
 class MalduinoW:
-    def __init__(self, server:str, debug:bool):
+    def __init__(self, server:str):
         self.server = server
         self.debug = debug
         self.connected = False
@@ -71,7 +73,6 @@ class MalduinoW:
         if self.connected == True:
             return False
 
-        if self.debug: self.__ws.enableTrace()
         self.__ws = websocket.WebSocketApp(f"ws://{self.server}/ws",
             on_open=self.__on_open,
             on_message=self.__on_message,
